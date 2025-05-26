@@ -46,6 +46,21 @@ const midiConfig = {
 let glslSandbox = null;
 let midiUniforms = {};
 
+// --- Exponential Smoother ---
+class ExponentialSmoother {
+  constructor(initial, alpha = 0.05) {
+    this.value = initial;
+    this.target = initial;
+    this.alpha = alpha;
+  }
+  tick() {
+    this.value += (this.target - this.value) * this.alpha;
+  }
+}
+
+const smoothParam1 = new ExponentialSmoother(params.u_param1, 0.15);
+const smoothParam2 = new ExponentialSmoother(params.u_param2, 0.15);
+
 // Function to update shader uniforms
 function updateUniform(name, value) {
   if (glslSandbox) {
@@ -55,23 +70,49 @@ function updateUniform(name, value) {
 
 // Connect Tweakpane to shader uniforms
 b1.on('change', ({value}) => {
-  updateUniform('u_param1', value);
+  // Only update target, smoothing will handle the rest
+  smoothParam1.target = value;
 });
 
 b2.on('change', ({value}) => {
-  updateUniform('u_param2', value);
+  smoothParam2.target = value;
 });
 
 // Keep UI in sync with MIDI
 function updatePaneFromMIDI() {
   if (typeof midiUniforms.u_param1 === 'number') {
     params.u_param1 = midiUniforms.u_param1;
+    smoothParam1.target = midiUniforms.u_param1;
   }
   if (typeof midiUniforms.u_param2 === 'number') {
     params.u_param2 = midiUniforms.u_param2;
+    smoothParam2.target = midiUniforms.u_param2;
   }
   pane.refresh();
 }
+
+// Add a new uniform for the integrated value
+let u_param1_integrated = 0;
+let lastTime = performance.now();
+
+// --- Animation loop for smoothing ---
+function animateSmoothing() {
+  const now = performance.now();
+  const dt = (now - lastTime) / 1000.0; // seconds
+  lastTime = now;
+
+  smoothParam1.tick();
+  smoothParam2.tick();
+  updateUniform('u_param1', smoothParam1.value);
+  updateUniform('u_param2', smoothParam2.value);
+
+  // Integrate u_param1 for gas pedal effect
+  u_param1_integrated += smoothParam1.value * dt;
+  updateUniform('u_param1_integrated', u_param1_integrated);
+
+  requestAnimationFrame(animateSmoothing);
+}
+requestAnimationFrame(animateSmoothing);
 
 // Initialize shader
 fetch('/shader.frag')
@@ -81,8 +122,9 @@ fetch('/shader.frag')
     glslSandbox.load(fragmentShader);
     
     // Set initial uniform values
-    updateUniform('u_param1', params.u_param1);
-    updateUniform('u_param2', params.u_param2);
+    updateUniform('u_param1', smoothParam1.value);
+    updateUniform('u_param2', smoothParam2.value);
+    updateUniform('u_param1_integrated', 0);
     
     function resize() {
       canvas.width = window.innerWidth;
@@ -103,7 +145,9 @@ if (navigator.requestMIDIAccess) {
           const norm = value / 127;
           const mapped = mapping.min + (mapping.max - mapping.min) * norm;
           midiUniforms[mapping.uniform] = mapped;
-          updateUniform(mapping.uniform, mapped);
+          // Set smoothing target
+          if (mapping.uniform === 'u_param1') smoothParam1.target = mapped;
+          if (mapping.uniform === 'u_param2') smoothParam2.target = mapped;
           updatePaneFromMIDI();
           console.log(`Set ${mapping.uniform} to ${mapped} (label: ${mapping.label})`);
         }

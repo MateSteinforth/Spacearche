@@ -6,6 +6,7 @@ uniform float u_time;
 uniform vec2 u_resolution;
 uniform float u_param1;
 uniform float u_param2;
+uniform float u_param1_integrated;
 
 // Adapted from Shadertoy: https://www.shadertoy.com/view/mtyGWy
 // See https://youtu.be/f4s1h2YETNY
@@ -28,8 +29,9 @@ void main() {
         if (i >= iter) break;
         uv = fract(uv * 1.5) - 0.5;
         float d = length(uv) * exp(-length(uv0));
-        vec3 col = palette(length(uv0) + i * 0.4 + u_time * u_param1);
-        d = sin(d * 8.0 + u_time * u_param1 * 8.0) / 8.0;
+        vec3 col = palette(length(uv0) + i * 0.4 + u_param1_integrated);
+        // Use integrated value for gas pedal effect
+        d = sin(d * 8.0 + u_param1_integrated * 8.0) / 8.0;
         d = abs(d);
         d = pow(0.01 / d, 1.2);
         finalColor += col * d;
