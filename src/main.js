@@ -6,7 +6,9 @@ const canvas = document.getElementById('shader-canvas');
 // Initialize params and Tweakpane first
 const params = {
   u_param1: 0.5,
-  u_param2: 0.0
+  u_param2: 0.0,
+  u_param3: 0.0,
+  u_param4: 0.0
 };
 
 const pane = new Pane({
@@ -34,12 +36,26 @@ const b2 = controls.addBinding(params, 'u_param2', {
   label: 'Knob 2',
   step: 0.01
 });
+const b3 = controls.addBinding(params, 'u_param3', {
+  min: -1.0,
+  max: 1.0,
+  label: 'Knob 3',
+  step: 0.01
+});
+const b4 = controls.addBinding(params, 'u_param4', {
+  min: -1.0,
+  max: 1.0,
+  label: 'Knob 4',
+  step: 0.01
+});
 
 // MIDI config
 const midiConfig = {
   mappings: [
     { control: 1, uniform: 'u_param1', min: 0.0, max: 1.0, label: 'Knob 1' },
-    { control: 2, uniform: 'u_param2', min: -1.0, max: 1.0, label: 'Knob 2' }
+    { control: 2, uniform: 'u_param2', min: -1.0, max: 1.0, label: 'Knob 2' },
+    { control: 3, uniform: 'u_param3', min: -1.0, max: 1.0, label: 'Knob 3' },
+    { control: 4, uniform: 'u_param4', min: -1.0, max: 1.0, label: 'Knob 4' }
   ]
 };
 
@@ -60,8 +76,16 @@ class ExponentialSmoother {
 
 const smoothParam1 = new ExponentialSmoother(params.u_param1, 0.15);
 const smoothParam2 = new ExponentialSmoother(params.u_param2, 0.15);
+const smoothParam3 = new ExponentialSmoother(params.u_param3, 0.15);
+const smoothParam4 = new ExponentialSmoother(params.u_param4, 0.15);
 
-// Function to update shader uniforms
+let u_param1_integrated = 0;
+let u_param2_integrated = 0;
+let u_param3_integrated = 0;
+let u_param4_integrated = 0;
+let lastTime = performance.now();
+
+// --- Function to update shader uniforms ---
 function updateUniform(name, value) {
   if (glslSandbox) {
     glslSandbox.setUniform(name, value);
@@ -77,6 +101,12 @@ b1.on('change', ({value}) => {
 b2.on('change', ({value}) => {
   smoothParam2.target = value;
 });
+b3.on('change', ({value}) => {
+  smoothParam3.target = value;
+});
+b4.on('change', ({value}) => {
+  smoothParam4.target = value;
+});
 
 // Keep UI in sync with MIDI
 function updatePaneFromMIDI() {
@@ -88,12 +118,16 @@ function updatePaneFromMIDI() {
     params.u_param2 = midiUniforms.u_param2;
     smoothParam2.target = midiUniforms.u_param2;
   }
+  if (typeof midiUniforms.u_param3 === 'number') {
+    params.u_param3 = midiUniforms.u_param3;
+    smoothParam3.target = midiUniforms.u_param3;
+  }
+  if (typeof midiUniforms.u_param4 === 'number') {
+    params.u_param4 = midiUniforms.u_param4;
+    smoothParam4.target = midiUniforms.u_param4;
+  }
   pane.refresh();
 }
-
-// Add a new uniform for the integrated value
-let u_param1_integrated = 0;
-let lastTime = performance.now();
 
 // --- Animation loop for smoothing ---
 function animateSmoothing() {
@@ -103,12 +137,22 @@ function animateSmoothing() {
 
   smoothParam1.tick();
   smoothParam2.tick();
+  smoothParam3.tick();
+  smoothParam4.tick();
   updateUniform('u_param1', smoothParam1.value);
   updateUniform('u_param2', smoothParam2.value);
+  updateUniform('u_param3', smoothParam3.value);
+  updateUniform('u_param4', smoothParam4.value);
 
   // Integrate u_param1 for gas pedal effect
   u_param1_integrated += smoothParam1.value * dt;
+  u_param2_integrated += smoothParam2.value * dt;
+  u_param3_integrated += smoothParam3.value * dt;
+  u_param4_integrated += smoothParam4.value * dt;
   updateUniform('u_param1_integrated', u_param1_integrated);
+  updateUniform('u_param2_integrated', u_param2_integrated);
+  updateUniform('u_param3_integrated', u_param3_integrated);
+  updateUniform('u_param4_integrated', u_param4_integrated);
 
   requestAnimationFrame(animateSmoothing);
 }
@@ -148,6 +192,8 @@ if (navigator.requestMIDIAccess) {
           // Set smoothing target
           if (mapping.uniform === 'u_param1') smoothParam1.target = mapped;
           if (mapping.uniform === 'u_param2') smoothParam2.target = mapped;
+          if (mapping.uniform === 'u_param3') smoothParam3.target = mapped;
+          if (mapping.uniform === 'u_param4') smoothParam4.target = mapped;
           updatePaneFromMIDI();
           console.log(`Set ${mapping.uniform} to ${mapped} (label: ${mapping.label})`);
         }

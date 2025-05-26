@@ -7,6 +7,10 @@ uniform vec2 u_resolution;
 uniform float u_param1;
 uniform float u_param2;
 uniform float u_param1_integrated;
+uniform float u_param3;
+uniform float u_param4;
+uniform float u_param3_integrated;
+uniform float u_param4_integrated;
 
 // Adapted from Shadertoy: https://www.shadertoy.com/view/mtyGWy
 // See https://youtu.be/f4s1h2YETNY
