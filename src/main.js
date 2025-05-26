@@ -174,6 +174,15 @@ shaderPane.addBinding(shaderParams, 'shader', {
   loadShader(ev.value);
 });
 
+// Helper to set shader by index and update dropdown
+function setShaderByIndex(idx) {
+  if (idx >= 0 && idx < shaderList.length) {
+    shaderParams.shader = shaderList[idx].file;
+    pane.refresh(); // update dropdown
+    loadShader(shaderList[idx].file);
+  }
+}
+
 function loadShader(shaderFile) {
   fetch('/' + shaderFile + '?v=' + Date.now())
     .then(res => res.text())
@@ -205,20 +214,25 @@ if (navigator.requestMIDIAccess) {
   navigator.requestMIDIAccess().then((midiAccess) => {
     function handleMIDIMessage(msg) {
       const [status, control, value] = msg.data;
-      if ((status & 0xF0) === 0xB0) {
-        const mapping = midiConfig.mappings.find(m => m.control === control);
-        if (mapping) {
-          const norm = value / 127;
-          const mapped = mapping.min + (mapping.max - mapping.min) * norm;
-          midiUniforms[mapping.uniform] = mapped;
-          // Set smoothing target
-          if (mapping.uniform === 'u_param1') smoothParam1.target = mapped;
-          if (mapping.uniform === 'u_param2') smoothParam2.target = mapped;
-          if (mapping.uniform === 'u_param3') smoothParam3.target = mapped;
-          if (mapping.uniform === 'u_param4') smoothParam4.target = mapped;
-          updatePaneFromMIDI();
-          console.log(`Set ${mapping.uniform} to ${mapped} (label: ${mapping.label})`);
+      // Accept both 0xB0 (CC) and 0x80 (Note Off) for shader switching
+      if ((status & 0xF0) === 0xB0 || (status & 0xF0) === 0x80) {
+        if (control >= 48 && control < 48 + shaderList.length) {
+          setShaderByIndex(control - 48);
+          return;
         }
+      }
+      const mapping = midiConfig.mappings.find(m => m.control === control);
+      if (mapping) {
+        const norm = value / 127;
+        const mapped = mapping.min + (mapping.max - mapping.min) * norm;
+        midiUniforms[mapping.uniform] = mapped;
+        // Set smoothing target
+        if (mapping.uniform === 'u_param1') smoothParam1.target = mapped;
+        if (mapping.uniform === 'u_param2') smoothParam2.target = mapped;
+        if (mapping.uniform === 'u_param3') smoothParam3.target = mapped;
+        if (mapping.uniform === 'u_param4') smoothParam4.target = mapped;
+        updatePaneFromMIDI();
+        console.log(`Set ${mapping.uniform} to ${mapped} (label: ${mapping.label})`);
       }
       console.log('MIDI data:', msg.data);
     }
