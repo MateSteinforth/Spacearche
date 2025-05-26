@@ -158,25 +158,44 @@ function animateSmoothing() {
 }
 requestAnimationFrame(animateSmoothing);
 
-// Initialize shader
-fetch('/shader.frag')
-  .then(res => res.text())
-  .then(fragmentShader => {
-    glslSandbox = new glsl.Canvas(canvas);
-    glslSandbox.load(fragmentShader);
-    
-    // Set initial uniform values
-    updateUniform('u_param1', smoothParam1.value);
-    updateUniform('u_param2', smoothParam2.value);
-    updateUniform('u_param1_integrated', 0);
-    
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-  });
+// List of available shaders
+const shaderList = [
+  { name: 'Default', file: 'shader.frag' },
+  { name: 'Shader 1', file: 'name.frag' },
+  { name: 'Shader 2', file: 'name2.frag' }
+];
+
+// Add dropdown to Tweakpane
+const shaderParams = { shader: shaderList[0].file };
+const shaderPane = pane.addFolder({ title: 'Shader Selection', expanded: true });
+shaderPane.addBinding(shaderParams, 'shader', {
+  options: Object.fromEntries(shaderList.map(s => [s.name, s.file]))
+}).on('change', (ev) => {
+  loadShader(ev.value);
+});
+
+function loadShader(shaderFile) {
+  fetch('/' + shaderFile + '?v=' + Date.now())
+    .then(res => res.text())
+    .then(fragmentShader => {
+      if (!glslSandbox) {
+        glslSandbox = new glsl.Canvas(canvas);
+      }
+      glslSandbox.load(fragmentShader);
+      // Set all uniforms to current values
+      updateUniform('u_param1', smoothParam1.value);
+      updateUniform('u_param2', smoothParam2.value);
+      updateUniform('u_param3', smoothParam3.value);
+      updateUniform('u_param4', smoothParam4.value);
+      updateUniform('u_param1_integrated', u_param1_integrated);
+      updateUniform('u_param2_integrated', u_param2_integrated);
+      updateUniform('u_param3_integrated', u_param3_integrated);
+      updateUniform('u_param4_integrated', u_param4_integrated);
+    });
+}
+
+// Replace initial shader loading with:
+loadShader(shaderParams.shader);
 
 // MIDI support
 if (navigator.requestMIDIAccess) {
