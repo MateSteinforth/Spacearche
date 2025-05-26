@@ -191,10 +191,9 @@ function loadShader(shaderFile) {
       updateUniform('u_param2_integrated', u_param2_integrated);
       updateUniform('u_param3_integrated', u_param3_integrated);
       updateUniform('u_param4_integrated', u_param4_integrated);
-      // Resize canvas and force render
+      // Resize canvas
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      glslSandbox.forceRender();
     });
 }
 
