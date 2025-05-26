@@ -16,7 +16,10 @@ void main() {
     vec4 o = vec4(0.0);
     for (int s = 0; s < 64; s++) {
         vec2 R = u_resolution.xy;
-        vec2 u = (gl_FragCoord.xy*2.0 - R + vec2(float(s%8), float(s/8))/4.0 - 2.0) / R.x;
+        // Replace integer modulus with float math
+        float sx = float(s) - 8.0 * floor(float(s) / 8.0);
+        float sy = floor(float(s) / 8.0);
+        vec2 u = (gl_FragCoord.xy*2.0 - R + vec2(sx, sy)/4.0 - 2.0) / R.x;
         u = floor((6.0 - vec2(atan(u.y, u.x)/3.0, length(u))) * R) + 0.5;
         // Use u_param1_integrated to control speed
         float t = u_param1_integrated;

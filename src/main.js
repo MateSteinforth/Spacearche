@@ -161,7 +161,7 @@ requestAnimationFrame(animateSmoothing);
 // List of available shaders
 const shaderList = [
   { name: 'Default', file: 'shader.frag' },
-  { name: 'Shader 1', file: 'name.frag' },
+  { name: 'Hyperspace', file: 'hyperspace.frag' },
   { name: 'Shader 2', file: 'name2.frag' }
 ];
 
@@ -191,6 +191,10 @@ function loadShader(shaderFile) {
       updateUniform('u_param2_integrated', u_param2_integrated);
       updateUniform('u_param3_integrated', u_param3_integrated);
       updateUniform('u_param4_integrated', u_param4_integrated);
+      // Resize canvas and force render
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      glslSandbox.forceRender();
     });
 }
 
