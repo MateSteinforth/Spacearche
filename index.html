@@ -25,12 +25,26 @@
         display: block;
         z-index: 1;
       }
+      #tweakpane-container {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 1000;
+        pointer-events: auto;
+      }
+      .tp-dfwv {
+        position: fixed !important;
+        top: 16px !important;
+        right: 16px !important;
+        z-index: 1001 !important;
+      }
       #app {
         display: none;
       }
     </style>
   </head>
   <body>
+    <div id="tweakpane-container"></div>
     <canvas id="shader-canvas"></canvas>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>

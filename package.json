@@ -12,6 +12,7 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "glsl-canvas-js": "^0.2.9"
+    "glsl-canvas-js": "^0.2.9",
+    "tweakpane": "^4.0.5"
   }
 }
