@@ -14,3 +14,26 @@ fetch('/shader.frag')
     window.addEventListener('resize', resize);
     resize();
   });
+
+// MIDI support
+if (navigator.requestMIDIAccess) {
+  navigator.requestMIDIAccess().then((midiAccess) => {
+    for (const input of midiAccess.inputs.values()) {
+      input.onmidimessage = (msg) => {
+        console.log('MIDI data:', msg.data);
+      };
+    }
+    midiAccess.onstatechange = (event) => {
+      // Listen for new devices
+      for (const input of midiAccess.inputs.values()) {
+        input.onmidimessage = (msg) => {
+          console.log('MIDI data:', msg.data);
+        };
+      }
+    };
+  }, (err) => {
+    console.error('MIDI access error:', err);
+  });
+} else {
+  console.warn('Web MIDI API not supported in this browser.');
+}
